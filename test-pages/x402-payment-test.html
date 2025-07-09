@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>X402 Payment Test</title>
+  
+  <!-- X402 Payment Meta Tags -->
+  <meta name="x-402-payment-required" content="true">
+  <meta name="x-402-amount" content="0.10">
+  <meta name="x-402-currency" content="USDC">
+  <meta name="x-402-description" content="Premium article access">
+  
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    
+    h1, h2 {
+      color: #0052FF;
+    }
+    
+    .article {
+      margin-top: 30px;
+    }
+    
+    .paywall {
+      background-color: #f5f5f5;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    
+    .premium-content {
+      background-color: #f0f8ff;
+      border: 1px solid #cce5ff;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 20px;
+      display: none;
+    }
+    
+    .payment-info {
+      background-color: #fff8e1;
+      border: 1px solid #ffecb3;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+    
+    .info-row {
+      display: flex;
+      margin-bottom: 10px;
+    }
+    
+    .info-label {
+      width: 120px;
+      font-weight: bold;
+    }
+    
+    .info-value {
+      flex: 1;
+    }
+    
+    button {
+      background-color: #0052FF;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    
+    button:hover {
+      background-color: #0045D8;
+    }
+    
+    .status {
+      margin-top: 20px;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    
+    .status.success {
+      background-color: #e6f7e6;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+    }
+    
+    .status.error {
+      background-color: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+    }
+    
+    .status.pending {
+      background-color: #fff3cd;
+      border: 1px solid #ffeeba;
+      color: #856404;
+    }
+    
+    .code-block {
+      background-color: #f8f9fa;
+      border: 1px solid #eaecef;
+      border-radius: 4px;
+      padding: 10px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      margin-top: 20px;
+    }
+    
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>X402 Payment Test Page</h1>
+  
+  <div class="payment-info">
+    <h3>X402 Payment Information</h3>
+    <div class="info-row">
+      <div class="info-label">Amount:</div>
+      <div class="info-value">0.10 USDC</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Description:</div>
+      <div class="info-value">Premium article access</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Currency:</div>
+      <div class="info-value">USDC (Sepolia)</div>
+    </div>
+  </div>
+  
+  <div class="article">
+    <h2>The Future of Decentralized Payments</h2>
+    
+    <p>In the rapidly evolving landscape of web3 technologies, decentralized payment systems are becoming increasingly important for content creators and service providers...</p>
+    
+    <p>The integration of cryptocurrency payments directly into web experiences represents a significant shift from traditional payment gateways, offering reduced fees, faster settlements, and enhanced privacy...</p>
+    
+    <div class="paywall" id="paywall">
+      <h3>Premium Content</h3>
+      <p>This content requires a payment of 0.10 USDC to access.</p>
+      <p>Please use the Autospend X402 extension to make this payment.</p>
+      
+      <div id="payment-status" class="status pending hidden">
+        Checking payment status...
+      </div>
+      
+      <button id="manual-check">Check Payment Status</button>
+    </div>
+    
+    <div class="premium-content" id="premium-content">
+      <h3>Premium Content Unlocked</h3>
+      
+      <p>Thank you for your payment! Here's the premium content you've unlocked:</p>
+      
+      <p>The X402 protocol represents a standardized approach to micropayments on the web, drawing inspiration from the HTTP 402 "Payment Required" status code that was reserved but never fully implemented in the original HTTP specification.</p>
+      
+      <p>By embedding payment requirements directly in meta tags, websites can seamlessly request micropayments for premium content, API access, or special features without redirecting users to external payment processors.</p>
+      
+      <p>This approach offers several advantages:</p>
+      
+      <ul>
+        <li><strong>Frictionless Experience:</strong> Users can make payments with a single click, without leaving the website</li>
+        <li><strong>Micropayment Viability:</strong> The low transaction costs of modern blockchains make small payments economically viable</li>
+        <li><strong>Sovereignty:</strong> Content creators maintain direct relationships with their audience</li>
+        <li><strong>Privacy:</strong> No need to share personal information beyond a wallet address</li>
+      </ul>
+      
+      <p>As web3 technologies continue to mature, we can expect to see wider adoption of protocols like X402, potentially revolutionizing how we pay for and consume digital content.</p>
+    </div>
+  </div>
+  
+  <div class="code-block" id="console-output">// Console output will appear here</div>
+  
+  <script>
+    // Elements
+    const paywallEl = document.getElementById('paywall');
+    const premiumContentEl = document.getElementById('premium-content');
+    const paymentStatusEl = document.getElementById('payment-status');
+    const manualCheckBtn = document.getElementById('manual-check');
+    const consoleOutputEl = document.getElementById('console-output');
+    
+    // Override console.log to display in the UI
+    const originalLog = console.log;
+    console.log = function(...args) {
+      originalLog.apply(console, args);
+      const message = args.map(arg => {
+        if (typeof arg === 'object') {
+          return JSON.stringify(arg, null, 2);
+        }
+        return String(arg);
+      }).join(' ');
+      consoleOutputEl.textContent += '> ' + message + '\n';
+    };
+    
+    // Check if payment has been made
+    function checkPaymentStatus() {
+      console.log('Checking payment status...');
+      
+      // Show status indicator
+      paymentStatusEl.textContent = 'Checking payment status...';
+      paymentStatusEl.className = 'status pending';
+      paymentStatusEl.classList.remove('hidden');
+      
+      // In a real implementation, this would check a backend API
+      // For this test, we'll simulate checking local storage
+      
+      // Check if the extension has stored a transaction for this page
+      if (window.localStorage) {
+        try {
+          const transactions = JSON.parse(localStorage.getItem('x402_transactions') || '[]');
+          
+          // Look for a transaction matching this page's URL
+          const pageUrl = window.location.href;
+          const matchingTx = transactions.find(tx => tx.pageUrl === pageUrl);
+          
+          if (matchingTx) {
+            console.log('Payment found:', matchingTx);
+            showPremiumContent(matchingTx);
+            return;
+          }
+        } catch (error) {
+          console.log('Error checking local storage:', error);
+        }
+      }
+      
+      // Check if window.x402WalletManager exists (injected by extension)
+      if (window.x402WalletManager) {
+        console.log('X402 Wallet Manager detected');
+        
+        // Check if the extension has a record of payment
+        if (typeof window.x402WalletManager.checkPaymentStatus === 'function') {
+          window.x402WalletManager.checkPaymentStatus()
+            .then(result => {
+              if (result && result.paid) {
+                console.log('Payment verified via extension:', result);
+                showPremiumContent(result);
+              } else {
+                console.log('No payment found via extension');
+                showPaymentRequired();
+              }
+            })
+            .catch(error => {
+              console.log('Error checking payment via extension:', error);
+              showPaymentRequired();
+            });
+        } else {
+          console.log('Extension detected but checkPaymentStatus not available');
+          showPaymentRequired();
+        }
+      } else {
+        console.log('X402 extension not detected');
+        showPaymentRequired();
+      }
+    }
+    
+    // Show premium content
+    function showPremiumContent(paymentInfo) {
+      paymentStatusEl.textContent = 'Payment verified! Unlocking content...';
+      paymentStatusEl.className = 'status success';
+      
+      // Hide paywall, show premium content
+      setTimeout(() => {
+        paywallEl.style.display = 'none';
+        premiumContentEl.style.display = 'block';
+      }, 1000);
+    }
+    
+    // Show payment required
+    function showPaymentRequired() {
+      paymentStatusEl.textContent = 'No payment found. Please use the Autospend X402 extension to make a payment.';
+      paymentStatusEl.className = 'status error';
+    }
+    
+    // Event listeners
+    manualCheckBtn.addEventListener('click', checkPaymentStatus);
+    
+    // Check payment status on page load
+    window.addEventListener('load', () => {
+      console.log('Page loaded, checking for X402 extension...');
+      
+      // Wait a moment for extension to initialize
+      setTimeout(checkPaymentStatus, 1000);
+      
+      // Listen for payment events from extension
+      window.addEventListener('message', (event) => {
+        // Only accept messages from the same frame
+        if (event.source !== window) return;
+        
+        const message = event.data;
+        
+        // Check if message is from our wallet manager
+        if (message && message.source === 'x402WalletManager') {
+          console.log('Received message from wallet manager:', message);
+          
+          if (message.event === 'paymentSuccess') {
+            console.log('Payment successful:', message.data);
+            showPremiumContent(message.data);
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>

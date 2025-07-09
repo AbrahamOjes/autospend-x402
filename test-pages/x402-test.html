@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>X402 Detection Test</title>
+  
+  <!-- X402 Payment Meta Tags -->
+  <meta name="x-402-payment-required" content="true">
+  <meta name="x-402-amount" content="0.50">
+  <meta name="x-402-currency" content="USDC">
+  <meta name="x-402-description" content="Test article access">
+  
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    
+    h1 {
+      color: #0052FF;
+    }
+    
+    .premium-content {
+      background-color: #f5f5f5;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+    
+    .meta-tags {
+      background-color: #f0f8ff;
+      border: 1px solid #cce5ff;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 20px;
+      font-family: monospace;
+    }
+    
+    button {
+      background-color: #0052FF;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    
+    button:hover {
+      background-color: #0045D8;
+    }
+  </style>
+</head>
+<body>
+  <h1>X402 Detection Test Page</h1>
+  
+  <p>This page contains X402 meta tags that should be detected by the Autospend extension.</p>
+  
+  <div class="meta-tags">
+    <p><strong>X402 Meta Tags:</strong></p>
+    <pre>&lt;meta name="x-402-payment-required" content="true"&gt;
+&lt;meta name="x-402-amount" content="0.50"&gt;
+&lt;meta name="x-402-currency" content="USDC"&gt;
+&lt;meta name="x-402-description" content="Test article access"&gt;</pre>
+  </div>
+  
+  <p>When the extension detects these tags, it should:</p>
+  <ol>
+    <li>Update the extension badge to show "X402"</li>
+    <li>Show payment details in the popup</li>
+    <li>Allow payment if wallet is connected</li>
+  </ol>
+  
+  <div class="premium-content">
+    <h2>Premium Content</h2>
+    <p>This is premium content that would be unlocked after payment.</p>
+    <p>In a real implementation, this content would be hidden until payment is verified.</p>
+  </div>
+  
+  <button id="add-dynamic-tags">Add X402 Tags Dynamically</button>
+  <button id="remove-tags">Remove X402 Tags</button>
+  
+  <script>
+    // Test dynamic tag addition and removal
+    document.getElementById('add-dynamic-tags').addEventListener('click', () => {
+      // Remove existing tags first
+      removeX402Tags();
+      
+      // Add tags dynamically
+      const tags = [
+        { name: 'x-402-payment-required', content: 'true' },
+        { name: 'x-402-amount', content: '1.00' },
+        { name: 'x-402-currency', content: 'USDC' },
+        { name: 'x-402-description', content: 'Dynamically added X402 payment' }
+      ];
+      
+      tags.forEach(tag => {
+        const meta = document.createElement('meta');
+        meta.setAttribute('name', tag.name);
+        meta.setAttribute('content', tag.content);
+        meta.setAttribute('data-x402-test', 'true');
+        document.head.appendChild(meta);
+      });
+      
+      alert('X402 tags added dynamically with amount 1.00 USDC');
+    });
+    
+    document.getElementById('remove-tags').addEventListener('click', () => {
+      removeX402Tags();
+      alert('X402 tags removed');
+    });
+    
+    function removeX402Tags() {
+      // Remove all meta tags with x-402 in the name
+      const x402Tags = document.querySelectorAll('meta[name^="x-402-"], meta[data-x402-test="true"]');
+      x402Tags.forEach(tag => tag.remove());
+    }
+  </script>
+</body>
+</html>

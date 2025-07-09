@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Autospend - X402 Payment</title>
+  <style>
+    :root {
+      --coinbase-blue: #0052FF;
+      --coinbase-blue-light: #0066FF;
+      --coinbase-blue-dark: #0045D8;
+      --success-green: #00C853;
+      --warning-yellow: #FFD600;
+      --error-red: #F44336;
+      --text-primary: #1E2026;
+      --text-secondary: #707A8A;
+      --background-light: #F5F5F5;
+      --border-color: #E0E0E0;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    }
+    
+    body {
+      width: 350px;
+      min-height: 400px;
+      overflow-x: hidden;
+      background-color: white;
+      color: var(--text-primary);
+    }
+    
+    .header {
+      padding: 16px;
+      background-color: var(--coinbase-blue);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .header h1 {
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .header .logo {
+      font-weight: 700;
+      font-size: 20px;
+    }
+    
+    .connection-status {
+      padding: 12px 16px;
+      background-color: var(--background-light);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+    
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+    
+    .status-dot.connected {
+      background-color: var(--success-green);
+    }
+    
+    .status-dot.disconnected {
+      background-color: var(--error-red);
+    }
+    
+    .status-dot.pending {
+      background-color: var(--warning-yellow);
+    }
+    
+    .refresh-button {
+      background: none;
+      border: none;
+      color: var(--coinbase-blue);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .content {
+      padding: 16px;
+    }
+    
+    .section {
+      margin-bottom: 20px;
+    }
+    
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--text-primary);
+    }
+    
+    .wallet-info {
+      background-color: var(--background-light);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .wallet-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    
+    .wallet-row:last-child {
+      margin-bottom: 0;
+    }
+    
+    .wallet-label {
+      color: var(--text-secondary);
+    }
+    
+    .wallet-value {
+      font-weight: 500;
+      word-break: break-all;
+    }
+    
+    .truncate-address {
+      max-width: 180px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .payment-details {
+      background-color: var(--background-light);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .payment-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    
+    .payment-row:last-child {
+      margin-bottom: 0;
+    }
+    
+    .payment-label {
+      color: var(--text-secondary);
+    }
+    
+    .payment-value {
+      font-weight: 500;
+    }
+    
+    .payment-amount {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--coinbase-blue);
+      text-align: center;
+      margin: 16px 0;
+    }
+    
+    .button {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: background-color 0.2s;
+    }
+    
+    .button-primary {
+      background-color: var(--coinbase-blue);
+      color: white;
+    }
+    
+    .button-primary:hover {
+      background-color: var(--coinbase-blue-light);
+    }
+    
+    .button-primary:active {
+      background-color: var(--coinbase-blue-dark);
+    }
+    
+    .button-secondary {
+      background-color: var(--background-light);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+    
+    .button-secondary:hover {
+      background-color: #EAEAEA;
+    }
+    
+    .transactions {
+      margin-top: 20px;
+    }
+    
+    .transaction-item {
+      padding: 12px;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 14px;
+    }
+    
+    .transaction-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    
+    .transaction-amount {
+      font-weight: 600;
+    }
+    
+    .transaction-date {
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+    
+    .transaction-description {
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+    
+    .transaction-hash {
+      font-size: 12px;
+      color: var(--coinbase-blue);
+      text-decoration: none;
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .no-transactions {
+      text-align: center;
+      color: var(--text-secondary);
+      padding: 20px 0;
+    }
+    
+    .error-message {
+      color: var(--error-red);
+      font-size: 14px;
+      margin-top: 8px;
+      text-align: center;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 20px 0;
+      color: var(--text-secondary);
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    .footer {
+      padding: 12px 16px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-secondary);
+      border-top: 1px solid var(--border-color);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Autospend</h1>
+    <span class="logo">X402</span>
+  </div>
+  
+  <div class="connection-status">
+    <div class="status-indicator">
+      <div id="connection-dot" class="status-dot disconnected"></div>
+      <span id="connection-status">Disconnected</span>
+    </div>
+    <button id="refresh-status" class="refresh-button">Refresh Status</button>
+  </div>
+  
+  <div class="content">
+    <!-- Wallet Section -->
+    <div id="wallet-section" class="section">
+      <h2 class="section-title">Wallet</h2>
+      
+      <div id="wallet-not-connected">
+        <p>Connect your Coinbase Wallet to make X402 payments.</p>
+        <button id="connect-wallet" class="button button-primary" style="margin-top: 16px;">Connect Coinbase Wallet</button>
+      </div>
+      
+      <div id="wallet-connected" class="hidden">
+        <div class="wallet-info">
+          <div class="wallet-row">
+            <span class="wallet-label">Address</span>
+            <span id="wallet-address" class="wallet-value truncate-address">0x0000...0000</span>
+          </div>
+          <div class="wallet-row">
+            <span class="wallet-label">Balance</span>
+            <span id="wallet-balance" class="wallet-value">0.00 USDC</span>
+          </div>
+          <div class="wallet-row">
+            <span class="wallet-label">Network</span>
+            <span id="wallet-network" class="wallet-value">Unknown</span>
+          </div>
+        </div>
+      </div>
+      
+      <div id="wallet-error" class="error-message hidden"></div>
+    </div>
+    
+    <!-- X402 Payment Section -->
+    <div id="x402-section" class="section hidden">
+      <h2 class="section-title">Payment Required</h2>
+      
+      <div class="payment-amount" id="payment-amount">0.00 USDC</div>
+      
+      <div class="payment-details">
+        <div class="payment-row">
+          <span class="payment-label">Description</span>
+          <span id="payment-description" class="payment-value">Content access</span>
+        </div>
+        <div class="payment-row">
+          <span class="payment-label">Currency</span>
+          <span id="payment-currency" class="payment-value">USDC</span>
+        </div>
+      </div>
+      
+      <button id="make-payment" class="button button-primary">Make Payment</button>
+      <div id="payment-error" class="error-message hidden"></div>
+    </div>
+    
+    <!-- No X402 Section -->
+    <div id="no-x402-section" class="section">
+      <h2 class="section-title">No Payment Required</h2>
+      <p>This page does not require an X402 payment.</p>
+    </div>
+    
+    <!-- Transactions Section -->
+    <div id="transactions-section" class="section">
+      <h2 class="section-title">Recent Transactions</h2>
+      <div id="transactions-list" class="transactions">
+        <div class="no-transactions">No recent transactions</div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="footer">
+    Autospend X402 Payment Extension v1.0.0
+  </div>
+  
+  <script src="popup-connection-handler.js"></script>
+  <script src="x402-popup.js"></script>
+</body>
+</html>

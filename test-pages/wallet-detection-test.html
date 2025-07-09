@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wallet Detection Test</title>
+  
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    
+    h1 {
+      color: #0052FF;
+    }
+    
+    .wallet-info {
+      background-color: #f5f5f5;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+    
+    .status {
+      margin-top: 20px;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    
+    .status.connected {
+      background-color: #e6f7e6;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+    }
+    
+    .status.disconnected {
+      background-color: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+    }
+    
+    .info-row {
+      display: flex;
+      margin-bottom: 10px;
+    }
+    
+    .info-label {
+      width: 120px;
+      font-weight: bold;
+    }
+    
+    .info-value {
+      flex: 1;
+      word-break: break-all;
+    }
+    
+    button {
+      background-color: #0052FF;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+      margin-top: 20px;
+    }
+    
+    button:hover {
+      background-color: #0045D8;
+    }
+    
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    
+    .code-block {
+      background-color: #f0f8ff;
+      border: 1px solid #cce5ff;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 20px;
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h1>Wallet Detection Test Page</h1>
+  
+  <p>This page tests the wallet detection and connection functionality of the Autospend extension.</p>
+  
+  <div class="wallet-info">
+    <div id="status" class="status disconnected">
+      Wallet Status: Disconnected
+    </div>
+    
+    <div id="wallet-details" style="display: none;">
+      <div class="info-row">
+        <div class="info-label">Address:</div>
+        <div id="address" class="info-value">-</div>
+      </div>
+      
+      <div class="info-row">
+        <div class="info-label">Network:</div>
+        <div id="network" class="info-value">-</div>
+      </div>
+      
+      <div class="info-row">
+        <div class="info-label">Chain ID:</div>
+        <div id="chain-id" class="info-value">-</div>
+      </div>
+      
+      <div class="info-row">
+        <div class="info-label">USDC Balance:</div>
+        <div id="balance" class="info-value">-</div>
+      </div>
+    </div>
+  </div>
+  
+  <button id="connect-wallet">Connect Wallet</button>
+  <button id="check-network">Check Network</button>
+  <button id="check-balance">Check USDC Balance</button>
+  
+  <div class="code-block" id="console-output">// Console output will appear here</div>
+  
+  <script>
+    // Elements
+    const statusEl = document.getElementById('status');
+    const walletDetailsEl = document.getElementById('wallet-details');
+    const addressEl = document.getElementById('address');
+    const networkEl = document.getElementById('network');
+    const chainIdEl = document.getElementById('chain-id');
+    const balanceEl = document.getElementById('balance');
+    const connectWalletBtn = document.getElementById('connect-wallet');
+    const checkNetworkBtn = document.getElementById('check-network');
+    const checkBalanceBtn = document.getElementById('check-balance');
+    const consoleOutputEl = document.getElementById('console-output');
+    
+    // Constants
+    const USDC_ADDRESS = '0x1c7d4b196cb0c7b01d743fbc6116a902379c7238'; // USDC contract on Sepolia
+    const BASE_SEPOLIA_CHAIN_ID = '0x11a1c7'; // Sepolia testnet chain ID
+    
+    // State
+    let connected = false;
+    let address = null;
+    let chainId = null;
+    
+    // Override console.log to display in the UI
+    const originalLog = console.log;
+    console.log = function(...args) {
+      originalLog.apply(console, args);
+      const message = args.map(arg => {
+        if (typeof arg === 'object') {
+          return JSON.stringify(arg, null, 2);
+        }
+        return String(arg);
+      }).join(' ');
+      consoleOutputEl.textContent += '> ' + message + '\n';
+    };
+    
+    // Check if Ethereum provider exists
+    function checkProvider() {
+      if (window.ethereum) {
+        console.log('Ethereum provider detected:', window.ethereum.isMetaMask ? 'MetaMask' : 
+                                                window.ethereum.isCoinbaseWallet ? 'Coinbase Wallet' : 
+                                                'Unknown wallet');
+        
+        // Check if already connected
+        window.ethereum.request({ method: 'eth_accounts' })
+          .then(accounts => {
+            if (accounts.length > 0) {
+              connected = true;
+              address = accounts[0];
+              updateUI();
+              
+              // Get chain ID
+              return window.ethereum.request({ method: 'eth_chainId' });
+            }
+          })
+          .then(id => {
+            if (id) {
+              chainId = id;
+              updateUI();
+            }
+          })
+          .catch(error => {
+            console.log('Error checking initial state:', error.message);
+          });
+        
+        // Set up event listeners
+        window.ethereum.on('accountsChanged', (accounts) => {
+          console.log('Accounts changed:', accounts);
+          if (accounts.length > 0) {
+            connected = true;
+            address = accounts[0];
+          } else {
+            connected = false;
+            address = null;
+          }
+          updateUI();
+        });
+        
+        window.ethereum.on('chainChanged', (id) => {
+          console.log('Chain changed:', id);
+          chainId = id;
+          updateUI();
+        });
+        
+        window.ethereum.on('disconnect', () => {
+          console.log('Wallet disconnected');
+          connected = false;
+          address = null;
+          updateUI();
+        });
+      } else {
+        console.log('No Ethereum provider found. Please install Coinbase Wallet extension.');
+      }
+    }
+    
+    // Connect wallet
+    async function connectWallet() {
+      if (!window.ethereum) {
+        console.log('No Ethereum provider found. Please install Coinbase Wallet extension.');
+        return;
+      }
+      
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        console.log('Connected accounts:', accounts);
+        
+        if (accounts.length > 0) {
+          connected = true;
+          address = accounts[0];
+          
+          // Get chain ID
+          chainId = await window.ethereum.request({ method: 'eth_chainId' });
+          console.log('Current chain ID:', chainId);
+          
+          updateUI();
+        }
+      } catch (error) {
+        console.log('Error connecting wallet:', error.message);
+      }
+    }
+    
+    // Check network
+    async function checkNetwork() {
+      if (!window.ethereum) {
+        console.log('No Ethereum provider found');
+        return;
+      }
+      
+      try {
+        const id = await window.ethereum.request({ method: 'eth_chainId' });
+        console.log('Current chain ID:', id);
+        chainId = id;
+        
+        let networkName = 'Unknown';
+        
+        if (id === '0x11a1c7') {
+          networkName = 'Sepolia Testnet';
+        } else if (id === '0x1') {
+          networkName = 'Ethereum Mainnet';
+        } else if (id === '0x2105') {
+          networkName = 'Base';
+        }
+        
+        console.log('Network:', networkName);
+        
+        // Check if on Sepolia
+        if (id !== BASE_SEPOLIA_CHAIN_ID) {
+          console.log('Not on Sepolia. Would you like to switch?');
+        }
+        
+        updateUI();
+      } catch (error) {
+        console.log('Error checking network:', error.message);
+      }
+    }
+    
+    // Check USDC balance
+    async function checkBalance() {
+      if (!window.ethereum || !address) {
+        console.log('Wallet not connected');
+        return;
+      }
+      
+      try {
+        // Check if on correct network
+        const id = await window.ethereum.request({ method: 'eth_chainId' });
+        if (id !== BASE_SEPOLIA_CHAIN_ID) {
+          console.log('Please switch to Sepolia network to check USDC balance');
+          return;
+        }
+        
+        // USDC balanceOf function signature
+        const data = '0x70a08231' + '000000000000000000000000' + address.slice(2);
+        
+        const result = await window.ethereum.request({
+          method: 'eth_call',
+          params: [
+            {
+              to: USDC_ADDRESS,
+              data
+            },
+            'latest'
+          ]
+        });
+        
+        // Convert hex result to decimal and divide by 10^6 (USDC has 6 decimals)
+        const balanceHex = result || '0x0';
+        const balanceWei = parseInt(balanceHex, 16);
+        const balanceUsdc = balanceWei / 1000000;
+        
+        console.log('USDC Balance:', balanceUsdc);
+        balanceEl.textContent = balanceUsdc + ' USDC';
+      } catch (error) {
+        console.log('Error checking balance:', error.message);
+      }
+    }
+    
+    // Update UI based on current state
+    function updateUI() {
+      if (connected && address) {
+        statusEl.className = 'status connected';
+        statusEl.textContent = 'Wallet Status: Connected';
+        walletDetailsEl.style.display = 'block';
+        addressEl.textContent = address;
+        
+        // Format chain ID to network name
+        let networkName = 'Unknown';
+        
+        if (chainId === '0x11a1c7') {
+          networkName = 'Sepolia Testnet';
+        } else if (chainId === '0x1') {
+          networkName = 'Ethereum Mainnet';
+        } else if (chainId === '0x2105') {
+          networkName = 'Base';
+        }
+        
+        networkEl.textContent = networkName;
+        chainIdEl.textContent = chainId || 'Unknown';
+      } else {
+        statusEl.className = 'status disconnected';
+        statusEl.textContent = 'Wallet Status: Disconnected';
+        walletDetailsEl.style.display = 'none';
+        addressEl.textContent = '-';
+        networkEl.textContent = '-';
+        chainIdEl.textContent = '-';
+        balanceEl.textContent = '-';
+      }
+    }
+    
+    // Event listeners
+    connectWalletBtn.addEventListener('click', connectWallet);
+    checkNetworkBtn.addEventListener('click', checkNetwork);
+    checkBalanceBtn.addEventListener('click', checkBalance);
+    
+    // Initialize
+    checkProvider();
+    console.log('Wallet detection test page loaded');
+  </script>
+</body>
+</html>
