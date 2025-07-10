@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium Video Tutorial - Advanced Smart Contract Development</title>
+    
+    <!-- X402 Payment Meta Tags -->
+    <meta name="x-402-payment-required" content="true">
+    <meta name="x-402-amount" content="0.20">
+    <meta name="x-402-currency" content="USDC">
+    <meta name="x-402-description" content="Premium Video Tutorial Access">
+    <meta name="x-402-contract-address" content="0x1c7d4b196cb0c7b01d743fbc6116a902379c7238">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .tagline {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        
+        .main-content {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .video-section {
+            position: relative;
+            background: #000;
+            aspect-ratio: 16/9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .video-placeholder {
+            text-align: center;
+            color: white;
+            padding: 40px;
+        }
+        
+        .play-button {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            border: 3px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .play-button:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
+        }
+        
+        .play-icon {
+            width: 0;
+            height: 0;
+            border-left: 25px solid white;
+            border-top: 15px solid transparent;
+            border-bottom: 15px solid transparent;
+            margin-left: 5px;
+        }
+        
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        
+        .lock-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        
+        .payment-info {
+            background: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .premium-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+        }
+        
+        .video-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .video-description {
+            color: #7f8c8d;
+            margin-bottom: 25px;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        
+        .payment-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+        
+        .payment-amount {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .payment-description {
+            opacity: 0.9;
+            margin-bottom: 15px;
+        }
+        
+        .unlock-instruction {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+        
+        .course-details {
+            padding: 30px;
+            background: #f8f9fa;
+        }
+        
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .detail-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .detail-icon {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+        
+        .detail-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+        
+        .detail-value {
+            color: #7f8c8d;
+        }
+        
+        .curriculum {
+            margin-top: 30px;
+        }
+        
+        .curriculum h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+        
+        .lesson-list {
+            list-style: none;
+        }
+        
+        .lesson-item {
+            background: white;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .lesson-number {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            font-size: 14px;
+        }
+        
+        .lesson-title {
+            flex: 1;
+            font-weight: 500;
+        }
+        
+        .lesson-duration {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        .instructor {
+            padding: 30px;
+            background: white;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .instructor-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 24px;
+        }
+        
+        .instructor-info h4 {
+            color: #2c3e50;
+            margin-bottom: 5px;
+            font-size: 18px;
+        }
+        
+        .instructor-title {
+            color: #667eea;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+        
+        .instructor-bio {
+            color: #7f8c8d;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🎓 DevMaster Academy</div>
+            <div class="tagline">Premium Web3 Development Courses</div>
+        </div>
+        
+        <div class="main-content">
+            <div class="video-section">
+                <div class="video-placeholder">
+                    <div class="play-button">
+                        <div class="play-icon"></div>
+                    </div>
+                    <h3>Advanced Smart Contract Development</h3>
+                    <p>Master-level techniques for building secure DeFi protocols</p>
+                </div>
+                <div class="video-overlay">
+                    <div class="lock-icon">🔒</div>
+                    <h3 style="color: white; margin-bottom: 10px;">Premium Content Locked</h3>
+                    <p style="color: rgba(255,255,255,0.8);">Pay to unlock this exclusive tutorial</p>
+                </div>
+            </div>
+            
+            <div class="payment-info">
+                <div class="premium-badge">Premium Tutorial</div>
+                <h1 class="video-title">Advanced Smart Contract Security Patterns</h1>
+                <p class="video-description">
+                    Learn cutting-edge security patterns and best practices for building bulletproof smart contracts. 
+                    This comprehensive tutorial covers advanced topics including reentrancy guards, access control patterns, 
+                    and gas optimization techniques used by top DeFi protocols.
+                </p>
+                
+                <div class="payment-box">
+                    <div class="payment-amount">$0.20 USDC</div>
+                    <div class="payment-description">One-time payment for lifetime access</div>
+                    <div class="unlock-instruction">
+                        Click the Autospend extension icon to pay and unlock this premium tutorial
+                    </div>
+                </div>
+            </div>
+            
+            <div class="course-details">
+                <div class="details-grid">
+                    <div class="detail-card">
+                        <div class="detail-icon">⏱️</div>
+                        <div class="detail-title">Duration</div>
+                        <div class="detail-value">2 hours 45 minutes</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-icon">📊</div>
+                        <div class="detail-title">Level</div>
+                        <div class="detail-value">Advanced</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-icon">💻</div>
+                        <div class="detail-title">Format</div>
+                        <div class="detail-value">HD Video + Code</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-icon">🎯</div>
+                        <div class="detail-title">Projects</div>
+                        <div class="detail-value">3 Hands-on Labs</div>
+                    </div>
+                </div>
+                
+                <div class="curriculum">
+                    <h3>📚 Course Curriculum</h3>
+                    <ul class="lesson-list">
+                        <li class="lesson-item">
+                            <div class="lesson-number">1</div>
+                            <div class="lesson-title">Introduction to Advanced Security Patterns</div>
+                            <div class="lesson-duration">18 min</div>
+                        </li>
+                        <li class="lesson-item">
+                            <div class="lesson-number">2</div>
+                            <div class="lesson-title">Reentrancy Guards and Protection Mechanisms</div>
+                            <div class="lesson-duration">32 min</div>
+                        </li>
+                        <li class="lesson-item">
+                            <div class="lesson-number">3</div>
+                            <div class="lesson-title">Access Control and Role-Based Permissions</div>
+                            <div class="lesson-duration">28 min</div>
+                        </li>
+                        <li class="lesson-item">
+                            <div class="lesson-number">4</div>
+                            <div class="lesson-title">Gas Optimization Techniques</div>
+                            <div class="lesson-duration">35 min</div>
+                        </li>
+                        <li class="lesson-item">
+                            <div class="lesson-number">5</div>
+                            <div class="lesson-title">Proxy Patterns and Upgradeable Contracts</div>
+                            <div class="lesson-duration">42 min</div>
+                        </li>
+                        <li class="lesson-item">
+                            <div class="lesson-number">6</div>
+                            <div class="lesson-title">Building a Secure DeFi Protocol (Hands-on Lab)</div>
+                            <div class="lesson-duration">50 min</div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="instructor">
+                <div class="instructor-avatar">AS</div>
+                <div class="instructor-info">
+                    <h4>Alex Smith</h4>
+                    <div class="instructor-title">Senior Smart Contract Engineer at Uniswap</div>
+                    <div class="instructor-bio">
+                        Alex has 6+ years of experience in blockchain development and has audited over $2B worth of smart contracts. 
+                        He's contributed to major DeFi protocols and regularly speaks at Ethereum conferences worldwide.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

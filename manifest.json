@@ -23,7 +23,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["x402-content.js"],
+      "js": ["x402-content-minimal.js"],
       "run_at": "document_idle"
     }
   ],
@@ -44,6 +44,7 @@
         "provider-bridge.js",
         "wallet-ready-check.js",
         "wallet-initializer.js",
+        "wallet-bridge.js",
         "wallet-connect.js"
       ],
       "matches": ["<all_urls>"]

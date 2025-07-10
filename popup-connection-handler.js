@@ -15,7 +15,7 @@ class PopupConnectionHandler {
       // Ping background script to check connection
       const pingResponse = await this.sendMessageToBackground({ action: 'PING' });
       
-      if (pingResponse && pingResponse.status === 'OK') {
+      if (pingResponse && pingResponse.status === 'PONG') {
         console.log('🔌 Connected to background script');
         this.connected = true;
         
@@ -56,8 +56,19 @@ class PopupConnectionHandler {
   
   // Send message to content script
   async sendMessageToContent(message) {
+    // Try to get active tab if not set
     if (!this.activeTabId) {
-      throw new Error('No active tab');
+      try {
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tabs.length > 0) {
+          this.activeTabId = tabs[0].id;
+          console.log('🔌 Found active tab:', this.activeTabId);
+        } else {
+          throw new Error('No active tab');
+        }
+      } catch (error) {
+        throw new Error('No active tab');
+      }
     }
     
     return new Promise((resolve, reject) => {

@@ -216,43 +216,117 @@
     }
     
     .transactions {
-      margin-top: 20px;
+      max-height: 300px;
+      overflow-y: auto;
     }
     
     .transaction-item {
+      background-color: var(--background-light);
+      border-radius: 8px;
       padding: 12px;
-      border-bottom: 1px solid var(--border-color);
-      font-size: 14px;
+      margin-bottom: 12px;
+      border-left: 4px solid var(--success-green);
+      transition: transform 0.2s ease;
+    }
+    
+    .transaction-item:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .transaction-item.failed {
+      border-left-color: var(--error-red);
     }
     
     .transaction-header {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 4px;
+      align-items: center;
+      margin-bottom: 8px;
     }
     
     .transaction-amount {
       font-weight: 600;
+      color: var(--coinbase-blue);
+      font-size: 16px;
+    }
+    
+    .transaction-status {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 12px;
+      background-color: var(--success-green);
+      color: white;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    
+    .transaction-status.failed {
+      background-color: var(--error-red);
     }
     
     .transaction-date {
       color: var(--text-secondary);
       font-size: 12px;
+      margin-top: 2px;
     }
     
     .transaction-description {
       color: var(--text-secondary);
-      margin-bottom: 4px;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    
+    .transaction-details {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+    }
+    
+    .transaction-network {
+      font-size: 11px;
+      color: var(--text-secondary);
+      background-color: rgba(0, 82, 255, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
     }
     
     .transaction-hash {
       font-size: 12px;
       color: var(--coinbase-blue);
       text-decoration: none;
-      display: block;
+      font-weight: 500;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      max-width: 120px;
+    }
+    
+    .transaction-hash:hover {
+      text-decoration: underline;
+    }
+    
+    .transaction-actions {
+      margin-top: 8px;
+      display: flex;
+      justify-content: flex-end;
+    }
+    
+    .clear-history-btn {
+      background: none;
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+    
+    .clear-history-btn:hover {
+      background-color: var(--background-light);
+      color: var(--text-primary);
     }
     
     .no-transactions {

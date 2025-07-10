@@ -223,25 +223,71 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Clear list
       transactionsList.innerHTML = '';
       
+      // Sort transactions by timestamp (newest first)
+      const sortedTransactions = transactions.sort((a, b) => b.timestamp - a.timestamp);
+      
       // Add transactions
-      for (const tx of transactions) {
+      for (const tx of sortedTransactions) {
         const txDate = new Date(tx.timestamp);
-        const formattedDate = txDate.toLocaleString();
+        const formattedDate = txDate.toLocaleDateString();
+        const formattedTime = txDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
         const txElement = document.createElement('div');
-        txElement.className = 'transaction-item';
+        txElement.className = `transaction-item ${tx.status === 'failed' || tx.status === 'error' ? 'failed' : ''}`;
+        
+        // Determine status display
+        let statusHtml = '';
+        if (tx.status === 'success') {
+          statusHtml = '<span class="transaction-status">Success</span>';
+        } else if (tx.status === 'failed' || tx.status === 'error') {
+          statusHtml = '<span class="transaction-status failed">Failed</span>';
+        }
+        
+        // Build transaction hash link
+        let hashHtml = '';
+        if (tx.transactionHash || tx.txHash) {
+          const hash = tx.transactionHash || tx.txHash;
+          const explorerUrl = tx.network === 'Base Sepolia' 
+            ? `https://sepolia.basescan.org/tx/${hash}`
+            : `https://sepolia.etherscan.io/tx/${hash}`;
+          hashHtml = `<a href="${explorerUrl}" target="_blank" class="transaction-hash" title="View on explorer">${formatAddress(hash)}</a>`;
+        }
+        
+        // Build network badge
+        const networkHtml = tx.network ? `<span class="transaction-network">${tx.network}</span>` : '';
         
         txElement.innerHTML = `
           <div class="transaction-header">
             <span class="transaction-amount">${tx.amount} ${tx.currency}</span>
-            <span class="transaction-date">${formattedDate}</span>
+            ${statusHtml}
           </div>
           <div class="transaction-description">${tx.description || 'Content access'}</div>
-          ${tx.txHash ? `<a href="https://sepolia.basescan.org/tx/${tx.txHash}" target="_blank" class="transaction-hash">${formatAddress(tx.txHash)}</a>` : ''}
+          <div class="transaction-date">${formattedDate} at ${formattedTime}</div>
+          ${(hashHtml || networkHtml) ? `
+            <div class="transaction-details">
+              ${networkHtml}
+              ${hashHtml}
+            </div>
+          ` : ''}
+          ${tx.status === 'failed' || tx.status === 'error' ? `
+            <div class="transaction-error" style="color: var(--error-red); font-size: 12px; margin-top: 4px;">
+              ${tx.error || 'Transaction failed'}
+            </div>
+          ` : ''}
         `;
         
         transactionsList.appendChild(txElement);
       }
+      
+      // Add clear history button if there are transactions
+      if (transactions.length > 0) {
+        const clearButton = document.createElement('button');
+        clearButton.className = 'clear-history-btn';
+        clearButton.textContent = 'Clear History';
+        clearButton.onclick = clearTransactionHistory;
+        transactionsList.appendChild(clearButton);
+      }
+      
     } catch (error) {
       console.error('Error loading transactions:', error);
       transactionsList.innerHTML = '<div class="no-transactions">Error loading transactions</div>';
@@ -252,5 +298,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   function formatAddress(address) {
     if (!address) return '';
     return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+  }
+  
+  // Clear transaction history
+  async function clearTransactionHistory() {
+    if (confirm('Are you sure you want to clear all transaction history? This action cannot be undone.')) {
+      try {
+        await new Promise((resolve, reject) => {
+          chrome.storage.local.remove('transactions', () => {
+            if (chrome.runtime.lastError) {
+              reject(new Error(chrome.runtime.lastError.message));
+            } else {
+              resolve();
+            }
+          });
+        });
+        
+        // Reload transactions display
+        await loadTransactions();
+        
+        console.log('🗑️ Transaction history cleared');
+      } catch (error) {
+        console.error('Error clearing transaction history:', error);
+        alert('Failed to clear transaction history. Please try again.');
+      }
+    }
   }
 });

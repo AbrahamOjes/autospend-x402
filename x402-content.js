@@ -1,8 +1,20 @@
 // x402-content.js - Content script for X402 Payment Extension
 // Handles X402 detection, script injection, and message bridging
 
+console.log('💰 Content script starting to load...');
+
 // Notify background script that content script has loaded
-chrome.runtime.sendMessage({ action: 'CONTENT_SCRIPT_LOADED' });
+try {
+  chrome.runtime.sendMessage({ action: 'CONTENT_SCRIPT_LOADED' }, (response) => {
+    if (chrome.runtime.lastError) {
+      console.error('💰 Error notifying background script:', chrome.runtime.lastError.message);
+    } else {
+      console.log('💰 Successfully notified background script of content script load');
+    }
+  });
+} catch (error) {
+  console.error('💰 Failed to send CONTENT_SCRIPT_LOADED message:', error);
+}
 
 // Initialize state
 let x402Data = null;
@@ -160,10 +172,13 @@ function injectWalletScript() {
 }
 
 // Check wallet manager status and respond
-function checkWalletManagerStatus(sendResponse) {
+function checkWalletManagerStatus(responseCallback) {
+  console.log('💰 Checking wallet manager status...');
+  
   try {
     // Check if wallet manager is initialized
     if (window.x402WalletManager) {
+      console.log('💰 Wallet manager found, getting status...');
       // Get wallet status
       const status = {
         initialized: true,
@@ -175,8 +190,9 @@ function checkWalletManagerStatus(sendResponse) {
         x402Data: x402Data
       };
       
-      sendResponse({ status: 'OK', data: status });
+      responseCallback({ status: 'OK', data: status });
     } else {
+      console.log('💰 Wallet manager not found, trying postMessage...');
       // Wallet manager not initialized yet, try to access it via postMessage
       window.postMessage({
         type: 'x402_check_status',
@@ -186,8 +202,9 @@ function checkWalletManagerStatus(sendResponse) {
       // Set up a temporary listener for the response
       const statusListener = (event) => {
         if (event.source === window && event.data.type === 'x402_status_response') {
+          console.log('💰 Received status response from wallet manager:', event.data.data);
           window.removeEventListener('message', statusListener);
-          sendResponse({ status: 'OK', data: event.data.data });
+          responseCallback({ status: 'OK', data: event.data.data });
         }
       };
       
@@ -195,8 +212,9 @@ function checkWalletManagerStatus(sendResponse) {
       
       // Fallback timeout
       setTimeout(() => {
+        console.log('💰 Status check timeout, wallet manager not responding');
         window.removeEventListener('message', statusListener);
-        sendResponse({ 
+        responseCallback({ 
           status: 'ERROR', 
           error: 'Wallet manager not initialized',
           data: {
@@ -209,11 +227,11 @@ function checkWalletManagerStatus(sendResponse) {
             x402Data: x402Data
           }
         });
-      }, 1000);
+      }, 2000); // Increased timeout to 2 seconds
     }
   } catch (error) {
     console.error('💰 Error checking wallet manager status:', error);
-    sendResponse({ 
+    responseCallback({ 
       status: 'ERROR', 
       error: error.message,
       data: {
@@ -233,93 +251,118 @@ function checkWalletManagerStatus(sendResponse) {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log('💰 Content script received message:', message);
   
-  // Handle messages from popup
-  switch (message.action) {
-    case 'CONTENT_SCRIPT_LOADED':
-      sendResponse({ status: 'OK' });
-      break;
-      
-    case 'CHECK_STATUS':
-      checkWalletManagerStatus(sendResponse);
-      return true; // Keep the message channel open for async response
-      
-    case 'CONNECT_WALLET':
-      // Connect wallet using CSP-compliant approach
-      try {
-        // Inject wallet connection script
-        const connectScript = document.createElement('script');
-        connectScript.src = chrome.runtime.getURL('wallet-connect.js');
-        connectScript.onload = () => {
-          console.log('💰 Wallet connect script loaded');
-        };
-        connectScript.onerror = (error) => {
-          console.error('💰 Error loading wallet connect script:', error);
-          sendResponse({ status: 'ERROR', error: 'Failed to load wallet connection script' });
-        };
-        document.head.appendChild(connectScript);
+  try {
+    // Ensure we always send a response
+    let responseHandled = false;
+    
+    const safeResponse = (response) => {
+      if (!responseHandled) {
+        responseHandled = true;
+        console.log('💰 Sending response:', response);
+        sendResponse(response);
+      }
+    };
+    
+    // Handle messages from popup
+    switch (message.action) {
+      case 'CONTENT_SCRIPT_LOADED':
+        safeResponse({ status: 'OK' });
+        break;
         
-        // Set up listener for connection result
-        const connectionListener = (event) => {
-          if (event.source === window && event.data.type === 'x402_wallet_connect_result') {
-            window.removeEventListener('message', connectionListener);
-            
-            if (event.data.success) {
-              sendResponse({ status: 'OK', address: event.data.address });
-            } else {
-              sendResponse({ status: 'ERROR', error: event.data.error });
+      case 'CHECK_STATUS':
+        checkWalletManagerStatus(safeResponse);
+        return true; // Keep the message channel open for async response
+        
+      case 'CONNECT_WALLET':
+        // Connect wallet using CSP-compliant approach
+        try {
+          // Inject wallet connection script
+          const connectScript = document.createElement('script');
+          connectScript.src = chrome.runtime.getURL('wallet-connect.js');
+          connectScript.onload = () => {
+            console.log('💰 Wallet connect script loaded');
+          };
+          connectScript.onerror = (error) => {
+            console.error('💰 Error loading wallet connect script:', error);
+            safeResponse({ status: 'ERROR', error: 'Failed to load wallet connection script' });
+          };
+          document.head.appendChild(connectScript);
+          
+          // Set up listener for connection result
+          const connectionListener = (event) => {
+            if (event.source === window && event.data.type === 'x402_wallet_connect_result') {
+              window.removeEventListener('message', connectionListener);
+              
+              if (event.data.success) {
+                safeResponse({ status: 'OK', address: event.data.address });
+              } else {
+                safeResponse({ status: 'ERROR', error: event.data.error });
+              }
             }
-          }
-        };
+          };
+          
+          window.addEventListener('message', connectionListener);
+          
+          // Timeout fallback
+          setTimeout(() => {
+            window.removeEventListener('message', connectionListener);
+            safeResponse({ status: 'ERROR', error: 'Connection timeout' });
+          }, 10000);
+          
+          return true;
+        } catch (error) {
+          console.error('💰 Error connecting wallet:', error);
+          safeResponse({ status: 'ERROR', error: error.message });
+          return true;
+        }
         
-        window.addEventListener('message', connectionListener);
-        
-        // Timeout fallback
-        setTimeout(() => {
-          window.removeEventListener('message', connectionListener);
-          sendResponse({ status: 'ERROR', error: 'Connection timeout' });
-        }, 10000);
-        
-        return true;
-      } catch (error) {
-        console.error('💰 Error connecting wallet:', error);
-        sendResponse({ status: 'ERROR', error: error.message });
-        return true;
-      }
-      
-    case 'GET_WALLET_STATUS':
-      // Return wallet status
-      if (window.x402WalletManager) {
-        sendResponse({
-          status: 'OK',
-          connected: window.x402WalletManager.isConnected,
-          address: window.x402WalletManager.address,
-          balance: window.x402WalletManager.balance,
-          network: window.x402WalletManager.network
-        });
-      } else {
-        sendResponse({ status: 'ERROR', error: 'Wallet manager not initialized' });
-      }
-      return true;
-      
-    case 'MAKE_PAYMENT':
-      // Process payment if wallet manager and X402 data available
-      if (window.x402WalletManager && x402Data) {
-        window.x402WalletManager.makePayment(x402Data)
-          .then(result => {
-            sendResponse({ status: 'OK', result });
-          })
-          .catch(error => {
-            sendResponse({ status: 'ERROR', error: error.message });
+      case 'GET_WALLET_STATUS':
+        // Return wallet status
+        if (window.x402WalletManager) {
+          safeResponse({
+            status: 'OK',
+            connected: window.x402WalletManager.isConnected,
+            address: window.x402WalletManager.address,
+            balance: window.x402WalletManager.balance,
+            network: window.x402WalletManager.network
           });
+        } else {
+          safeResponse({ status: 'ERROR', error: 'Wallet manager not initialized' });
+        }
         return true;
-      } else {
-        sendResponse({ 
-          status: 'ERROR', 
-          error: !window.x402WalletManager ? 'Wallet manager not initialized' : 'No X402 data available' 
-        });
-        return true;
-      }
+        
+      case 'MAKE_PAYMENT':
+        // Process payment if wallet manager and X402 data available
+        if (window.x402WalletManager && x402Data) {
+          window.x402WalletManager.makePayment(x402Data)
+            .then(result => {
+              safeResponse({ status: 'OK', result });
+            })
+            .catch(error => {
+              safeResponse({ status: 'ERROR', error: error.message });
+            });
+          return true;
+        } else {
+          safeResponse({ 
+            status: 'ERROR', 
+            error: !window.x402WalletManager ? 'Wallet manager not initialized' : 'No X402 data available' 
+          });
+          return true;
+        }
+        
+      default:
+        console.log('💰 Unknown message action:', message.action);
+        safeResponse({ status: 'ERROR', error: 'Unknown action' });
+        break;
+    }
+  } catch (error) {
+    console.error('💰 Error handling message:', error);
+    if (!responseHandled) {
+      sendResponse({ status: 'ERROR', error: error.message });
+    }
   }
+  
+  return true; // Keep message channel open for async responses
 });
 
 // Listen for messages from page context
@@ -423,4 +466,18 @@ window.addEventListener('message', (event) => {
   
   // Store X402 data if detected
   x402Data = detector.x402Data;
+  
+  // Initialize wallet manager after page load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('💰 DOM loaded, wallet manager initialization handled by injected scripts');
+    });
+  } else {
+    console.log('💰 DOM already loaded, wallet manager initialization handled by injected scripts');
+  }
+  
+  // Mark content script as ready
+  setTimeout(() => {
+    console.log('💰 Content script fully initialized and ready for messages');
+  }, 500); // Increased timeout to ensure everything is loaded
 })();

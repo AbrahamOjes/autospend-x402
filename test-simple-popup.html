@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple Content Script Test</title>
+  <style>
+    body {
+      width: 300px;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+    }
+    
+    button {
+      background: #0052FF;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 10px 0;
+      width: 100%;
+    }
+    
+    button:hover {
+      background: #0066FF;
+    }
+    
+    .result {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    
+    .success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+  </style>
+</head>
+<body>
+  <h2>🔥 Simple Content Script Test</h2>
+  
+  <p>This tests if the content script is being injected at all.</p>
+  
+  <button id="test-content">Test Content Script</button>
+  <button id="test-background">Test Background</button>
+  
+  <div id="result" class="result" style="display: none;"></div>
+  
+  <div style="margin-top: 20px; font-size: 11px; color: #666;">
+    <strong>Instructions:</strong><br>
+    1. Look for red indicator on page (content script loaded)<br>
+    2. Check console for "🔥 SIMPLE TEST" messages<br>
+    3. Click buttons to test messaging
+  </div>
+
+  <script src="test-simple-popup.js"></script>
+</body>
+</html>

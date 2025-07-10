@@ -32,14 +32,22 @@ chrome.runtime.onInstalled.addListener(() => {
 
 // Listen for messages from content scripts and popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('🎯 Background received message:', message);
+  console.log('🎯 Received message:', message);
   
   switch (message.action) {
     case 'PING':
-      // Health check from popup
-      sendResponse({ status: 'OK', timestamp: Date.now() });
-      return true;
+      console.log('🎯 PING received from:', sender.tab ? 'content script' : 'popup');
+      sendResponse({ status: 'PONG', timestamp: Date.now() });
+      break;
       
+    case 'CONTENT_SCRIPT_LOADED':
+    case 'CONTENT_SCRIPT_TEST_LOADED':
+      console.log('🎯 Content script loaded on tab:', sender.tab?.id);
+      if (sender.tab) {
+        state.activeTabId = sender.tab.id;
+      }
+      sendResponse({ status: 'OK' });
+      break;
     case 'WALLET_EVENT':
       // Wallet connection events
       handleWalletEvent(message, sender.tab?.id);
@@ -76,6 +84,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           x402Data: state.x402Data,
           paymentStatus: state.paymentStatus
         }
+      });
+      return true;
+      
+    case 'GET_TRANSACTIONS':
+      // Return transaction history
+      chrome.storage.local.get('transactions', (result) => {
+        sendResponse({ 
+          status: 'OK', 
+          transactions: result.transactions || [] 
+        });
+      });
+      return true;
+      
+    case 'CLEAR_TRANSACTIONS':
+      // Clear transaction history
+      chrome.storage.local.set({ transactions: [] }, () => {
+        sendResponse({ status: 'OK' });
       });
       return true;
   }
@@ -173,18 +198,36 @@ function handlePaymentStatus(status, data, tabId) {
   };
   
   if (status === 'success') {
-    // Store transaction in history
+    // Store transaction in history with comprehensive details
     chrome.storage.local.get('transactions', (result) => {
       const transactions = result.transactions || [];
-      transactions.unshift({
-        ...data,
-        timestamp: Date.now()
-      });
       
-      // Keep only last 10 transactions
-      const limitedTransactions = transactions.slice(0, 10);
+      const transactionRecord = {
+        id: data.transactionHash || `tx_${Date.now()}`,
+        transactionHash: data.transactionHash,
+        amount: data.amount,
+        currency: data.currency || 'USDC',
+        description: data.description || 'X402 Payment',
+        recipient: data.recipient || data.to,
+        sender: data.sender || data.from,
+        network: data.network || 'Base Sepolia',
+        timestamp: Date.now(),
+        status: 'success',
+        url: data.url || (tabId ? `Tab ${tabId}` : 'Unknown'),
+        gasUsed: data.gasUsed,
+        gasFee: data.gasFee,
+        blockNumber: data.blockNumber,
+        x402Data: state.x402Data // Include original X402 payment request data
+      };
+      
+      transactions.unshift(transactionRecord);
+      
+      // Keep only last 20 transactions
+      const limitedTransactions = transactions.slice(0, 20);
       
       chrome.storage.local.set({ transactions: limitedTransactions });
+      
+      console.log('🎯 Transaction stored:', transactionRecord);
     });
     
     // Show notification
@@ -192,7 +235,7 @@ function handlePaymentStatus(status, data, tabId) {
       type: 'basic',
       iconUrl: 'icons/icon128.png',
       title: 'Payment Successful',
-      message: `Paid ${data.amount} ${data.currency} for ${data.description || 'content'}`
+      message: `Paid ${data.amount} ${data.currency || 'USDC'} for ${data.description || 'content'}`
     });
   }
   
