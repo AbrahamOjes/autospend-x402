@@ -188,6 +188,69 @@
             text-align: center;
             color: #7f8c8d;
         }
+        
+        /* Paywall styles */
+        .paywall {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 30px 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .paywall h3 {
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+        
+        .premium-content {
+            display: none; /* Initially hidden */
+        }
+        
+        .payment-status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+        
+        .status-pending {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+        }
+        
+        .status-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .status-error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .console-output {
+            background-color: #f8f9fa;
+            border: 1px solid #eaecef;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            margin-top: 20px;
+            font-size: 14px;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none; /* Hidden by default */
+        }
     </style>
 </head>
 <body>
@@ -213,7 +276,22 @@
             <p>Click the Autospend extension to pay and unlock this content</p>
         </div>
         
-        <div class="content">
+        <!-- Paywall section - shown before payment -->
+        <div id="paywall" class="paywall">
+            <h3>Premium Content</h3>
+            <p>This in-depth analysis requires a payment of 0.15 USDC to access.</p>
+            <div class="payment-amount">$0.15 USDC</div>
+            <p>Please use the Autospend X402 extension to make this payment.</p>
+            
+            <div id="payment-status" class="payment-status status-pending hidden">
+                Checking payment status...
+            </div>
+            
+            <button id="check-payment-btn">Check Payment Status</button>
+        </div>
+        
+        <!-- Premium content - initially hidden -->
+        <div id="premium-content" class="content premium-content">
             <p>The digital content landscape is undergoing a fundamental transformation. As creators seek new ways to monetize their work and consumers demand more seamless payment experiences, the X402 protocol emerges as a game-changing solution.</p>
             
             <h2>The Problem with Traditional Paywalls</h2>
@@ -281,5 +359,159 @@
             <p>Powered by X402 Protocol</p>
         </div>
     </div>
+    <!-- Debug console (hidden in production) -->
+    <div id="console-output" class="console-output">// Console output will appear here...</div>
+    
+    <script>
+        // Elements
+        const paywallEl = document.getElementById('paywall');
+        const premiumContentEl = document.getElementById('premium-content');
+        const paymentStatusEl = document.getElementById('payment-status');
+        const checkPaymentBtn = document.getElementById('check-payment-btn');
+        const consoleOutputEl = document.getElementById('console-output');
+        
+        // Override console.log to display in the UI
+        const originalLog = console.log;
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            const message = args.map(arg => {
+                if (typeof arg === 'object') {
+                    try {
+                        return JSON.stringify(arg, null, 2);
+                    } catch (e) {
+                        return String(arg);
+                    }
+                }
+                return String(arg);
+            }).join(' ');
+            consoleOutputEl.textContent += '> ' + message + '\n';
+            
+            // Uncomment to show console for debugging
+            // consoleOutputEl.style.display = 'block';
+        };
+        
+        // Check if payment has been made
+        function checkPaymentStatus() {
+            console.log('Checking payment status...');
+            
+            // Show status indicator
+            paymentStatusEl.textContent = 'Checking payment status...';
+            paymentStatusEl.className = 'payment-status status-pending';
+            paymentStatusEl.classList.remove('hidden');
+            
+            // Check if window.x402WalletManager exists (injected by extension)
+            if (window.x402WalletManager) {
+                console.log('X402 Wallet Manager detected');
+                
+                // Check if the extension has a record of payment
+                if (typeof window.x402WalletManager.checkPaymentStatus === 'function') {
+                    window.x402WalletManager.checkPaymentStatus()
+                        .then(result => {
+                            if (result && result.paid) {
+                                console.log('Payment verified via extension:', result);
+                                showPremiumContent(result);
+                            } else {
+                                console.log('No payment found via extension');
+                                showPaymentRequired();
+                            }
+                        })
+                        .catch(error => {
+                            console.log('Error checking payment via extension:', error);
+                            showPaymentRequired();
+                        });
+                } else {
+                    console.log('Extension detected but checkPaymentStatus not available');
+                    showPaymentRequired();
+                }
+            } else {
+                console.log('X402 extension not detected');
+                showPaymentRequired();
+            }
+            
+            // Also check localStorage for test purposes
+            if (window.localStorage) {
+                try {
+                    const transactions = JSON.parse(localStorage.getItem('x402_transactions') || '[]');
+                    const pageUrl = window.location.href;
+                    const matchingTx = transactions.find(tx => tx.pageUrl === pageUrl);
+                    
+                    if (matchingTx) {
+                        console.log('Payment found in localStorage:', matchingTx);
+                        showPremiumContent(matchingTx);
+                        return;
+                    }
+                } catch (error) {
+                    console.log('Error checking local storage:', error);
+                }
+            }
+        }
+        
+        // Show premium content
+        function showPremiumContent(paymentInfo) {
+            paymentStatusEl.textContent = 'Payment verified! Unlocking content...';
+            paymentStatusEl.className = 'payment-status status-success';
+            
+            // Hide paywall, show premium content
+            setTimeout(() => {
+                paywallEl.style.display = 'none';
+                premiumContentEl.style.display = 'block';
+            }, 1000);
+            
+            // Store payment info in localStorage for testing
+            try {
+                const transactions = JSON.parse(localStorage.getItem('x402_transactions') || '[]');
+                const pageUrl = window.location.href;
+                
+                // Only add if not already present
+                if (!transactions.some(tx => tx.pageUrl === pageUrl)) {
+                    transactions.push({
+                        pageUrl: pageUrl,
+                        amount: '0.15',
+                        currency: 'USDC',
+                        timestamp: Date.now(),
+                        ...paymentInfo
+                    });
+                    localStorage.setItem('x402_transactions', JSON.stringify(transactions));
+                }
+            } catch (error) {
+                console.log('Error storing payment info:', error);
+            }
+        }
+        
+        // Show payment required
+        function showPaymentRequired() {
+            paymentStatusEl.textContent = 'No payment found. Please use the Autospend X402 extension to make a payment.';
+            paymentStatusEl.className = 'payment-status status-error';
+        }
+        
+        // Event listeners
+        checkPaymentBtn.addEventListener('click', checkPaymentStatus);
+        
+        // Check payment status on page load
+        window.addEventListener('load', () => {
+            console.log('Page loaded, checking for X402 extension...');
+            
+            // Wait a moment for extension to initialize
+            setTimeout(checkPaymentStatus, 1000);
+            
+            // Listen for payment events from extension
+            window.addEventListener('message', (event) => {
+                // Only accept messages from the same frame
+                if (event.source !== window) return;
+                
+                const message = event.data;
+                
+                // Check if message is from our wallet manager
+                if (message && message.source === 'x402WalletManager') {
+                    console.log('Received message from wallet manager:', message);
+                    
+                    if (message.event === 'paymentSuccess') {
+                        console.log('Payment successful:', message.data);
+                        showPremiumContent(message.data);
+                    }
+                }
+            });
+        });
+    </script>
 </body>
 </html>

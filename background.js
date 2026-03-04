@@ -47,7 +47,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         state.activeTabId = sender.tab.id;
       }
       sendResponse({ status: 'OK' });
-      break;
+      return true;
+      
     case 'WALLET_EVENT':
       // Wallet connection events
       handleWalletEvent(message, sender.tab?.id);
@@ -63,13 +64,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case 'PAYMENT_STATUS':
       // Payment progress tracking
       handlePaymentStatus(message.status, message.data, sender.tab?.id);
-      sendResponse({ status: 'OK' });
-      return true;
-      
-    case 'CONTENT_SCRIPT_LOADED':
-      // Content script initialization
-      console.log('🎯 Content script loaded in tab:', sender.tab?.id);
-      state.activeTabId = sender.tab?.id;
       sendResponse({ status: 'OK' });
       return true;
       

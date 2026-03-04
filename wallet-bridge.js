@@ -132,6 +132,59 @@
     }
   }
   
+  // Validate payment amount
+  function validateAmount(amount) {
+    const amountStr = String(amount).trim();
+    
+    if (!amountStr || !/^\d+(\.\d+)?$/.test(amountStr)) {
+      return { valid: false, error: 'Invalid amount format' };
+    }
+    
+    const value = parseFloat(amountStr);
+    
+    if (isNaN(value) || value <= 0) {
+      return { valid: false, error: 'Amount must be greater than 0' };
+    }
+    
+    if (value > 1000000) {
+      return { valid: false, error: 'Amount is too large' };
+    }
+    
+    const decimalPart = amountStr.split('.')[1];
+    if (decimalPart && decimalPart.length > 6) {
+      return { valid: false, error: 'Amount has too many decimal places (max 6 for USDC)' };
+    }
+    
+    return { valid: true, value: value };
+  }
+  
+  // Check USDC balance
+  async function checkUSDCBalance(walletAddress, usdcContractAddress) {
+    try {
+      // ERC-20 balanceOf function signature
+      const balanceOfMethodId = '0x70a08231';
+      const paddedAddress = walletAddress.slice(2).padStart(64, '0');
+      const data = balanceOfMethodId + paddedAddress;
+      
+      const result = await window.ethereum.request({
+        method: 'eth_call',
+        params: [{
+          to: usdcContractAddress,
+          data: data
+        }, 'latest']
+      });
+      
+      // Convert hex result to decimal (USDC has 6 decimals)
+      const balanceInWei = parseInt(result, 16);
+      const balance = balanceInWei / 1000000;
+      
+      return { success: true, balance: balance };
+    } catch (error) {
+      console.error('🌉 WALLET BRIDGE: Error checking balance:', error);
+      return { success: false, balance: 0, error: error.message };
+    }
+  }
+  
   // Make USDC payment
   async function makePayment(paymentData) {
     try {
@@ -142,7 +195,7 @@
       if (!window.ethereum) {
         return {
           success: false,
-          error: 'No wallet detected'
+          error: 'No wallet detected. Please install Coinbase Wallet.'
         };
       }
       
@@ -151,7 +204,7 @@
       if (accounts.length === 0) {
         return {
           success: false,
-          error: 'Wallet not connected'
+          error: 'Wallet not connected. Please connect your wallet first.'
         };
       }
       
@@ -160,21 +213,52 @@
       if (chainId !== '0x14a34') { // Base Sepolia chain ID
         return {
           success: false,
-          error: 'Please switch to Base Sepolia network'
+          error: 'Please switch to Base Sepolia network in your wallet.'
         };
       }
+      
+      // Validate payment amount
+      const amountValidation = validateAmount(paymentData.amount);
+      if (!amountValidation.valid) {
+        return {
+          success: false,
+          error: amountValidation.error
+        };
+      }
+      
+      const amount = amountValidation.value;
       
       // USDC contract address on Base Sepolia (for ERC-20 transfer)
       const usdcContractAddress = '0x1c7d4b196cb0c7b01d743fbc6116a902379c7238'; // Base Sepolia USDC contract
       // Recipient address (where the USDC payment goes)
       const recipientAddress = paymentData.contractAddress || '0x1c7d4b196cb0c7b01d743fbc6116a902379c7238';
       
-      // Convert amount to wei (USDC has 6 decimals)
-      const amount = parseFloat(paymentData.amount);
-      if (isNaN(amount) || amount <= 0) {
-        throw new Error(`Invalid payment amount: ${paymentData.amount}`);
+      // Validate recipient address
+      if (!/^0x[a-fA-F0-9]{40}$/.test(recipientAddress)) {
+        return {
+          success: false,
+          error: 'Invalid recipient address'
+        };
       }
       
+      // Check USDC balance before attempting payment
+      console.log('🌉 WALLET BRIDGE: Checking USDC balance...');
+      const balanceCheck = await checkUSDCBalance(accounts[0], usdcContractAddress);
+      
+      if (balanceCheck.success) {
+        console.log('🌉 WALLET BRIDGE: Current USDC balance:', balanceCheck.balance);
+        
+        if (balanceCheck.balance < amount) {
+          return {
+            success: false,
+            error: `Insufficient USDC balance. You have ${balanceCheck.balance.toFixed(2)} USDC but need ${amount} USDC. Visit https://faucet.circle.com/ to get test USDC tokens.`
+          };
+        }
+      } else {
+        console.warn('🌉 WALLET BRIDGE: Could not check balance, proceeding with payment attempt');
+      }
+      
+      // Convert amount to wei (USDC has 6 decimals)
       const amountInWei = Math.floor(amount * 1000000);
       console.log('🌉 WALLET BRIDGE: Amount conversion:', amount, 'USDC =', amountInWei, 'wei');
       

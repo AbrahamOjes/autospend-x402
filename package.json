@@ -1,0 +1,41 @@
+{
+  "name": "autospend-x402",
+  "version": "2.0.0",
+  "description": "A Chrome extension that enables seamless cryptocurrency payments using the X402 protocol with Coinbase Wallet integration",
+  "author": "Autospend AI Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AbrahamOjes/autospend-x402.git"
+  },
+  "homepage": "https://github.com/AbrahamOjes/autospend-x402#readme",
+  "bugs": {
+    "url": "https://github.com/AbrahamOjes/autospend-x402/issues"
+  },
+  "scripts": {
+    "dev": "python3 test-server.py",
+    "lint": "eslint *.js",
+    "format": "prettier --write \"**/*.{js,json,html,css,md}\"",
+    "build": "node scripts/build.js",
+    "package": "npm run build && node scripts/package.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "eslint": "^8.50.0",
+    "prettier": "^3.0.3",
+    "archiver": "^6.0.1"
+  },
+  "keywords": [
+    "chrome-extension",
+    "x402",
+    "cryptocurrency",
+    "payments",
+    "coinbase-wallet",
+    "usdc",
+    "base-network",
+    "web3"
+  ],
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
